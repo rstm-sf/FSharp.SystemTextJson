@@ -26,8 +26,6 @@ type JsonFSharpConverter
             JsonMapConverter.CreateConverter(typeToConvert)
         | TypeCache.TypeKind.Tuple ->
             JsonTupleConverter.CreateConverter(typeToConvert, fsOptions)
-        | TypeCache.TypeKind.Record ->
-            JsonRecordConverter.CreateConverter(typeToConvert, options, fsOptions, overrides)
         | TypeCache.TypeKind.Union ->
             JsonUnionConverter.CreateConverter(typeToConvert, options, fsOptions, overrides)
         | _ ->

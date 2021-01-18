@@ -9,13 +9,10 @@ open BenchmarkDotNet.Running
 open BenchmarkDotNet.Validators
 open BenchmarkDotNet.Exporters
 open BenchmarkDotNet.Environments
-open System.Reflection
-open BenchmarkDotNet.Configs
 
 open System.Text.Json
 open System.Text.Json.Serialization
 open Newtonsoft.Json
-open Newtonsoft.Json.Linq
 
 type TestRecord = 
     { name: string
@@ -60,7 +57,14 @@ type Records () =
 
 type Classes() =
     inherit ArrayTestBase<SimpleClass>(SimpleClass(Name = "sample", Thing = Some true, Time = DateTimeOffset.UnixEpoch.AddDays(200.)))
-    
+
+[<MemoryDiagnoser>]
+[<SimpleJob(RuntimeMoniker.NetCoreApp31)>]
+[<SimpleJob(RuntimeMoniker.NetCoreApp50)>]
+type GetTypeBenchmark() =
+    [<Benchmark>]
+    member _.TypeCache() =
+        TypeCache.getKind typeof<TestRecord> |> ignore
 
 type ReflectionComparison() =
 
@@ -82,12 +86,6 @@ type ReflectionComparison() =
         for i in 0..this.Iterations do
             Reflection.FSharpType.IsRecord(typeof<TestRecord>, true) |> ignore
 
-    [<Benchmark>]
-    member this.FSharpRecordCached() = 
-        for i in 0..this.Iterations do
-            TypeCache.isRecord typeof<TestRecord> |> ignore
-
-
 let config =
     ManualConfig
         .Create(DefaultConfig.Instance)
@@ -102,5 +100,6 @@ let defaultSwitch () =
 
 [<EntryPoint>]
 let main argv =
-    let _summary = defaultSwitch().Run(argv, config)
+    BenchmarkRunner.Run<GetTypeBenchmark>() |> ignore
+    // let _summary = defaultSwitch().Run(argv, config)
     0

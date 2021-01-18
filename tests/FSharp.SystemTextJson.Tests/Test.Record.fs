@@ -3,7 +3,6 @@ module Tests.Record
 open Xunit
 open System.Text.Json.Serialization
 open System.Text.Json
-open System.Linq.Expressions
 
 module NonStruct =
 

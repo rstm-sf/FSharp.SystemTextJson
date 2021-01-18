@@ -1,4 +1,4 @@
-namespace System.Text.Json.Serialization
+﻿namespace System.Text.Json.Serialization
 
 open System
 open System.Collections.Generic
@@ -61,7 +61,7 @@ type JsonRecordConverter<'T>(options: JsonSerializerOptions, fsOptions: JsonFSha
     let fieldCount = fieldProps.Length
     let minExpectedFieldCount =
         fieldProps
-        |> Seq.filter (fun p -> p.MustBePresent)
+        |> Array.countBy (fun p -> p.MustBePresent)
         |> Seq.length
 
     let ctor = FSharpValue.PreComputeRecordConstructor(recordType, true)
@@ -159,7 +159,7 @@ type JsonRecordConverter(fsOptions: JsonFSharpOptions) =
         JsonRecordConverter(JsonFSharpOptions())
 
     static member internal CanConvert(typeToConvert) =
-        TypeCache.isRecord typeToConvert
+        false
 
     static member internal CreateConverter
         (

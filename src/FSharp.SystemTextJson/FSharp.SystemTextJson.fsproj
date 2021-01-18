@@ -1,17 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <Description>Provides F# union and record support for System.Text.Json</Description>
-    <Authors>Loic Denuziere</Authors>
+    <Authors>Loic Denuziere, Igor Bagdamyan</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/tarmil/FSharp.SystemTextJson</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tarmil/FSharp.SystemTextJson.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/En3Tho/FSharp.SystemTextJson</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/En3Tho/FSharp.SystemTextJson.git</RepositoryUrl>
     <Tags>F#;FSharp;Json</Tags>
     <!-- SourceLink settings -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <PackageId>Crafttalk.FSharp.SystemTextJson</PackageId>
+    <PackageVersion>5.0.0</PackageVersion>
+    <TargetFrameworks>net5.0;netstandard2.1</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeCache.fs" />
@@ -24,5 +27,7 @@
     <Compile Include="Union.fs" />
     <Compile Include="All.fs" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="5.0.1" />
+  </ItemGroup>
 </Project>
