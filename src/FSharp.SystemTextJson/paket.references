@@ -1,4 +1,0 @@
-FSharp.Core
-System.Text.Json restriction: == netstandard2.0
-Microsoft.SourceLink.GitHub
-Nerdbank.GitVersioning

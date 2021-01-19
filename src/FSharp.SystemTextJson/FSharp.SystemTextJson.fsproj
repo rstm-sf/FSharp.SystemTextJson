@@ -11,10 +11,12 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <PackageId>Crafttalk.FSharp.SystemTextJson</PackageId>
-    <PackageVersion>5.0.0</PackageVersion>
+    <PackageId>CraftTalk.FSharp.SystemTextJson</PackageId>
+    <PackageVersion>5.0.100</PackageVersion>
     <TargetFrameworks>net5.0;netstandard2.1</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>5.0.100</AssemblyVersion>
+    <FileVersion>5.0.100</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeCache.fs" />
