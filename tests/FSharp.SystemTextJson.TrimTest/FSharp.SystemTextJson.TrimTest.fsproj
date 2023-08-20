@@ -1,13 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />
+    <TrimmerRootDescriptor Include="roots.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FSharp.SystemTextJson\FSharp.SystemTextJson.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.1" />
+    <PackageReference Include="xunit" Version="2.5.0" />
+    <PackageReference Include="xunit.console" Version="2.5.0" />
   </ItemGroup>
 </Project>

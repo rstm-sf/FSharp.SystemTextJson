@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
@@ -9,9 +9,15 @@
     <Compile Include="Test.Collection.fs" />
     <Compile Include="Test.Record.fs" />
     <Compile Include="Test.Union.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="Test.Regression.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FSharp.SystemTextJson\FSharp.SystemTextJson.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FsCheck" Version="2.16.5" />
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.5" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.1" />
+    <PackageReference Include="xunit" Version="2.5.0" />
   </ItemGroup>
 </Project>

@@ -3,9 +3,9 @@ namespace System.Text.Json.Serialization
 open System
 open System.Collections.Concurrent
 
-module TypeCache = 
+module TypeCache =
     open FSharp.Reflection
-    
+
     // Have to use concurrentdictionary here because dictionaries thrown on non-locked access:
     (* Error Message:
         System.InvalidOperationException : Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.
@@ -25,17 +25,18 @@ module TypeCache =
         let cache = ConcurrentDictionary<Type, TypeKind>()
         let listTy = typedefof<_ list>
         let setTy = typedefof<Set<_>>
-        let mapTy = typedefof<Map<_,_>>
-        let typeKindFactory = Func<Type, TypeKind>(fun ty ->
-            if ty.IsGenericType && ty.GetGenericTypeDefinition() = listTy then TypeKind.List
-            elif ty.IsGenericType && ty.GetGenericTypeDefinition() = setTy then TypeKind.Set
-            elif ty.IsGenericType && ty.GetGenericTypeDefinition() = mapTy then TypeKind.Map
-            elif FSharpType.IsTuple(ty) then TypeKind.Tuple
-            elif FSharpType.IsUnion(ty, true) then TypeKind.Union
-            else TypeKind.Other)
+        let mapTy = typedefof<Map<_, _>>
+        let typeKindFactory =
+            Func<Type, TypeKind>(fun ty ->
+                if ty.IsGenericType && ty.GetGenericTypeDefinition() = listTy then TypeKind.List
+                elif ty.IsGenericType && ty.GetGenericTypeDefinition() = setTy then TypeKind.Set
+                elif ty.IsGenericType && ty.GetGenericTypeDefinition() = mapTy then TypeKind.Map
+                elif FSharpType.IsTuple(ty) then TypeKind.Tuple
+                elif FSharpType.IsUnion(ty, true) then TypeKind.Union
+                else TypeKind.Other
+            )
 
-        fun (ty: Type) ->
-            cache.GetOrAdd(ty, typeKindFactory)
+        fun (ty: Type) -> cache.GetOrAdd(ty, typeKindFactory)
 
     let isUnion ty =
         getKind ty = TypeKind.Union

@@ -1,9 +1,11 @@
 namespace System.Text.Json.Serialization
 
 open System
+open System.Collections.Generic
 open System.Runtime.InteropServices
 open System.Text.Json
 
+[<Flags>]
 type JsonUnionEncoding =
 
     //// General base format
@@ -13,21 +15,21 @@ type JsonUnionEncoding =
     /// and `unionFieldsName` (defaults to "Fields") contains the union fields.
     /// If the case doesn't have fields, "Fields": [] is omitted.
     /// This flag is included in Default.
-    | AdjacentTag               = 0x00_00_00_01
+    | AdjacentTag = 0x00_00_00_01
 
     /// Encode unions as a 1-valued object:
     /// The field name is the union tag, and the value is the union fields.
-    | ExternalTag               = 0x00_00_00_02
+    | ExternalTag = 0x00_00_00_02
 
     /// Encode unions as a (n+1)-valued object or array (depending on NamedFields):
     /// the first value (named `unionTagName`, defaulting to "Case", if NamedFields is set)
     /// is the union tag, the rest are the union fields.
-    | InternalTag               = 0x00_00_00_04
+    | InternalTag = 0x00_00_00_04
 
     /// Encode unions as a n-valued object:
     /// the union tag is not encoded, only the union fields are.
     /// Deserialization is only possible if the fields of all cases have different names.
-    | Untagged                  = 0x00_00_01_08
+    | Untagged = 0x00_00_01_08
 
 
 
@@ -36,106 +38,369 @@ type JsonUnionEncoding =
     /// When set on an FSharpJsonConverterAttribute (true if no encoding is passed),
     /// inherit the union encoding from the FSharpJsonConverter, if any.
     /// When set on an FSharpJsonConverter object, this flag is ignored.
-    | Inherit                   = 0x80_00_00_00
+    | Inherit = 0x80_00_00_00
 
 
     //// Additional options
 
     /// If unset, union fields are encoded as an array.
     /// If set, union fields are encoded as an object using their field names.
-    | NamedFields               = 0x00_00_01_00
+    | NamedFields = 0x00_00_01_00
 
     /// If set, union cases that don't have fields are encoded as a bare string.
-    | UnwrapFieldlessTags       = 0x00_00_02_00
+    | UnwrapFieldlessTags = 0x00_00_02_00
 
     /// Obsolete: use UnwrapFieldlessTags instead.
-    | [<Obsolete "Use UnwrapFieldlessTags">]
-      BareFieldlessTags         = 0x00_00_02_00
+    | [<Obsolete "Use UnwrapFieldlessTags">] BareFieldlessTags = 0x00_00_02_00
 
     /// If set, `None` is represented as null,
     /// and `Some x`  is represented the same as `x`.
     /// This flag is included in Default.
-    | UnwrapOption              = 0x00_00_04_00
+    | UnwrapOption = 0x00_00_04_00
 
     /// Obsolete: use UnwrapOption instead.
-    | [<Obsolete "Use UnwrapOption">]
-      SuccintOption             = 0x00_00_04_00
+    | [<Obsolete "Use UnwrapOption">] SuccintOption = 0x00_00_04_00
 
     /// If set, single-case single-field unions are serialized as the single field's value.
     /// This flag is included in Default.
-    | UnwrapSingleCaseUnions    = 0x00_00_08_00
+    | UnwrapSingleCaseUnions = 0x00_00_08_00
 
     /// Obsolete: use UnwrapSingleCaseUnions instead.
-    | [<Obsolete "Use UnwrapSingleCaseUnions">]
-      EraseSingleCaseUnions     = 0x00_00_08_00
+    | [<Obsolete "Use UnwrapSingleCaseUnions">] EraseSingleCaseUnions = 0x00_00_08_00
 
     /// If set, the field of a single-field union case is encoded as just the value
     /// rather than a single-value array or object.
-    | UnwrapSingleFieldCases    = 0x00_00_10_00
+    | UnwrapSingleFieldCases = 0x00_00_10_00
 
     /// Implicitly sets NamedFields. If set, when a union case has a single field which is a record,
     /// the fields of this record are encoded directly as fields of the object representing the union.
-    | UnwrapRecordCases         = 0x00_00_21_00
+    | UnwrapRecordCases = 0x00_00_21_00
+
+    /// In AdjacentTag and InternalTag mode, allow deserializing unions
+    /// where the tag is not the first field in the JSON object.
+    | AllowUnorderedTag = 0x00_00_40_00
+
+    /// When a union field doesn't have an explicit name, use its type as name.
+    | UnionFieldNamesFromTypes = 0x00_00_80_00
 
 
     //// Specific formats
 
-    | Default                   = 0x00_00_0C_01
-    | NewtonsoftLike            = 0x00_00_00_01
-    | ThothLike                 = 0x00_00_02_04
-    | FSharpLuLike              = 0x00_00_16_02
+    | Default = 0x00_00_4C_01 // AdjacentTag ||| UnwrapOption ||| UnwrapSingleCaseUnions ||| AllowUnorderedTag
+    | NewtonsoftLike = 0x00_00_40_01 // AdjacentTag ||| AllowUnorderedTag
+    | ThothLike = 0x00_00_42_04 // InternalTag ||| BareFieldlessTags ||| AllowUnorderedTag
+    | FSharpLuLike = 0x00_00_56_02 // ExternalTag ||| BareFieldlessTags ||| UnwrapOption ||| UnwrapSingleFieldCases ||| AllowUnorderedTag
 
 type JsonUnionTagName = string
 type JsonUnionFieldsName = string
 
+type JsonFSharpTypes =
+    /// F# records, struct records and anonymous records.
+    | Records = 0x001
+    /// F# discriminated unions and struct discriminated unions.
+    | Unions = 0x002
+    /// Tuples and struct tuples.
+    | Tuples = 0x004
+    /// F# lists.
+    | Lists = 0x010
+    /// F# sets.
+    | Sets = 0x020
+    /// F# maps, including those with non-string keys.
+    | Maps = 0x040
+    /// F# options.
+    | Options = 0x100
+    /// F# value options.
+    | ValueOptions = 0x200
+    /// F# options and value options.
+    | OptionalTypes = 0xf00
+    /// F# lists, sets and maps.
+    | Collections = 0x0f0
+    /// All types not already fully supported by System.Text.Json.
+    | Minimal = 0x046
+    /// All supported types.
+    | All = 0xfff
+
+type SkippableOptionFields =
+    /// None and ValueNone fields in records and unions are skippable if the JsonSerializerOptions has DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull.
+    | FromJsonSerializerOptions = 0
+    /// None and ValueNone fields in records and unions are never skippable.
+    | Never = 1
+    /// None and ValueNone fields in records and unions are always skippable.
+    | Always = 2
+
+type MapFormat =
+    /// Always serialize Maps as JSON objects.
+    /// Only supports the same key types as the built-in serializer for Dictionary.
+    /// Requires System.Text.Json 8.0 or newer.
+    | Object = 0
+    /// Always serialize Maps as JSON arrays whose items are [key, value] JSON arrays.
+    /// Supports all key types.
+    | ArrayOfPairs = 1
+    /// Serialize Maps as JSON objects if the key type is string or a single-case union wrapping string;
+    /// otherwise, serialize Maps as JSON arrays whose items are [key, value] JSON arrays.
+    /// Supports all key types.
+    /// This is the default format.
+    | ObjectOrArrayOfPairs = 2
+
 module internal Default =
 
-    let [<Literal>] UnionEncoding = JsonUnionEncoding.Default
+    [<Literal>]
+    let UnionEncoding = JsonUnionEncoding.Default
 
-    let [<Literal>] UnionTagName = "Case"
+    [<Literal>]
+    let UnionTagName = "Case"
 
-    let [<Literal>] UnionFieldsName = "Fields"
+    [<Literal>]
+    let UnionFieldsName = "Fields"
 
-    let [<Literal>] UnionTagNamingPolicy = null : JsonNamingPolicy
+    [<Literal>]
+    let UnionTagNamingPolicy: JsonNamingPolicy = null
 
-    let [<Literal>] UnionTagCaseInsensitive = false
+    [<Literal>]
+    let UnionFieldNamingPolicy: JsonNamingPolicy = null
 
-    let [<Literal>] AllowNullFields = false
+    [<Literal>]
+    let UnionTagCaseInsensitive = false
 
-type JsonFSharpOptions
-    (
-        [<Optional; DefaultParameterValue(Default.UnionEncoding ||| JsonUnionEncoding.Inherit)>]
-        unionEncoding: JsonUnionEncoding,
-        [<Optional; DefaultParameterValue(Default.UnionTagName)>]
-        unionTagName: JsonUnionTagName,
-        [<Optional; DefaultParameterValue(Default.UnionFieldsName)>]
-        unionFieldsName: JsonUnionFieldsName,
-        [<Optional; DefaultParameterValue(Default.UnionTagNamingPolicy)>]
-        unionTagNamingPolicy: JsonNamingPolicy,
-        [<Optional; DefaultParameterValue(Default.UnionTagCaseInsensitive)>]
-        unionTagCaseInsensitive: bool,
-        [<Optional; DefaultParameterValue(Default.AllowNullFields)>]
-        allowNullFields: bool,
-        [<Optional; DefaultParameterValue(false)>]
-        allowOverride: bool
-    ) =
+    [<Literal>]
+    let IncludeRecordProperties = false
 
-    member this.UnionEncoding = unionEncoding
+    [<Literal>]
+    let AllowNullFields = false
 
-    member this.UnionTagName = unionTagName
+    [<Literal>]
+    let Types = JsonFSharpTypes.All
 
-    member this.UnionFieldsName = unionFieldsName
+type internal JsonFSharpOptionsRecord =
+    { UnionEncoding: JsonUnionEncoding
+      UnionTagName: JsonUnionTagName
+      UnionFieldsName: JsonUnionFieldsName
+      UnionTagNamingPolicy: JsonNamingPolicy
+      UnionFieldNamingPolicy: JsonNamingPolicy
+      UnionTagCaseInsensitive: bool
+      AllowNullFields: bool
+      IncludeRecordProperties: bool
+      SkippableOptionFields: SkippableOptionFields
+      DeserializeNullAsNone: bool
+      MapFormat: MapFormat
+      Types: JsonFSharpTypes
+      AllowOverride: bool
+      Overrides: JsonFSharpOptions -> IDictionary<Type, JsonFSharpOptions> }
 
-    member this.UnionTagNamingPolicy = unionTagNamingPolicy
+and JsonFSharpOptions internal (options: JsonFSharpOptionsRecord) =
 
-    member this.UnionTagCaseInsensitive = unionTagCaseInsensitive
+    let removeBaseEncodings = enum<JsonUnionEncoding> ~~~ 0x00_00_00_FF
 
-    member this.AllowNullFields = allowNullFields
+    static let emptyOverrides (_: JsonFSharpOptions) =
+        null
 
-    member this.AllowOverride = allowOverride
+    // Note: For binary compatibility, don't add options to this constructor.
+    // New options will only be settable via fluent API.
+    new([<Optional; DefaultParameterValue(Default.UnionEncoding ||| JsonUnionEncoding.Inherit)>] unionEncoding: JsonUnionEncoding,
+        [<Optional; DefaultParameterValue(Default.UnionTagName)>] unionTagName: JsonUnionTagName,
+        [<Optional; DefaultParameterValue(Default.UnionFieldsName)>] unionFieldsName: JsonUnionFieldsName,
+        [<Optional; DefaultParameterValue(Default.UnionTagNamingPolicy)>] unionTagNamingPolicy: JsonNamingPolicy,
+        [<Optional; DefaultParameterValue(Default.UnionTagNamingPolicy)>] unionFieldNamingPolicy: JsonNamingPolicy,
+        [<Optional; DefaultParameterValue(Default.UnionTagCaseInsensitive)>] unionTagCaseInsensitive: bool,
+        [<Optional; DefaultParameterValue(Default.AllowNullFields)>] allowNullFields: bool,
+        [<Optional; DefaultParameterValue(Default.IncludeRecordProperties)>] includeRecordProperties: bool,
+        [<Optional; DefaultParameterValue(Default.Types)>] types: JsonFSharpTypes,
+        [<Optional; DefaultParameterValue(false)>] allowOverride: bool) =
+        JsonFSharpOptions(
+            { UnionEncoding = unionEncoding
+              UnionTagName = unionTagName
+              UnionFieldsName = unionFieldsName
+              UnionTagNamingPolicy = unionTagNamingPolicy
+              UnionFieldNamingPolicy = unionFieldNamingPolicy
+              UnionTagCaseInsensitive = unionTagCaseInsensitive
+              AllowNullFields = allowNullFields
+              IncludeRecordProperties = includeRecordProperties
+              SkippableOptionFields = SkippableOptionFields.FromJsonSerializerOptions
+              DeserializeNullAsNone = false
+              MapFormat = MapFormat.ObjectOrArrayOfPairs
+              Types = types
+              AllowOverride = allowOverride
+              Overrides = emptyOverrides }
+        )
 
-    member this.WithUnionEncoding(unionEncoding) =
-        JsonFSharpOptions(unionEncoding, unionTagName, unionFieldsName, unionTagNamingPolicy, unionTagCaseInsensitive, allowNullFields, allowOverride)
+    static member Default() =
+        JsonFSharpOptions(Default.UnionEncoding)
+
+    static member InheritUnionEncoding() =
+        JsonFSharpOptions(JsonUnionEncoding.Inherit)
+
+    static member NewtonsoftLike() =
+        JsonFSharpOptions(JsonUnionEncoding.NewtonsoftLike)
+
+    static member ThothLike() =
+        JsonFSharpOptions(JsonUnionEncoding.ThothLike)
+
+    static member FSharpLuLike() =
+        JsonFSharpOptions(JsonUnionEncoding.FSharpLuLike)
+
+    member internal _.Record = options
+
+    member _.UnionEncoding = options.UnionEncoding
+
+    member _.UnionTagName = options.UnionTagName
+
+    member _.UnionFieldsName = options.UnionFieldsName
+
+    member _.UnionTagNamingPolicy = options.UnionTagNamingPolicy
+
+    member _.UnionFieldNamingPolicy = options.UnionFieldNamingPolicy
+
+    member _.UnionTagCaseInsensitive = options.UnionTagCaseInsensitive
+
+    member _.AllowNullFields = options.AllowNullFields
+
+    member _.IncludeRecordProperties = options.IncludeRecordProperties
+
+    member _.SkippableOptionFields = options.SkippableOptionFields
+
+    member _.MapFormat = options.MapFormat
+
+    member _.Types = options.Types
+
+    member _.AllowOverride = options.AllowOverride
+
+    member _.Overrides = options.Overrides
+
+    member _.WithUnionEncoding(unionEncoding) =
+        JsonFSharpOptions({ options with UnionEncoding = unionEncoding })
+
+    member _.WithUnionTagName(unionTagName) =
+        JsonFSharpOptions({ options with UnionTagName = unionTagName })
+
+    member _.WithUnionFieldsName(unionFieldsName) =
+        JsonFSharpOptions({ options with UnionFieldsName = unionFieldsName })
+
+    member _.WithUnionTagNamingPolicy(unionTagNamingPolicy) =
+        JsonFSharpOptions({ options with UnionTagNamingPolicy = unionTagNamingPolicy })
+
+    member _.WithUnionFieldNamingPolicy(unionFieldNamingPolicy) =
+        JsonFSharpOptions({ options with UnionFieldNamingPolicy = unionFieldNamingPolicy })
+
+    member _.WithUnionTagCaseInsensitive([<Optional; DefaultParameterValue true>] unionTagCaseInsensitive) =
+        JsonFSharpOptions({ options with UnionTagCaseInsensitive = unionTagCaseInsensitive })
+
+    member _.WithAllowNullFields([<Optional; DefaultParameterValue true>] allowNullFields) =
+        JsonFSharpOptions({ options with AllowNullFields = allowNullFields })
+
+    member _.WithIncludeRecordProperties([<Optional; DefaultParameterValue true>] includeRecordProperties) =
+        JsonFSharpOptions({ options with IncludeRecordProperties = includeRecordProperties })
+
+    member _.WithSkippableOptionFields
+        (
+            skippableOptionFields,
+            [<Optional; DefaultParameterValue false>] deserializeNullAsNone: bool
+        ) =
+        JsonFSharpOptions(
+            { options with
+                SkippableOptionFields = skippableOptionFields
+                DeserializeNullAsNone = deserializeNullAsNone
+                UnionEncoding =
+                    if skippableOptionFields = SkippableOptionFields.Always then
+                        options.UnionEncoding ||| JsonUnionEncoding.UnwrapOption
+                    else
+                        options.UnionEncoding }
+        )
+
+
+    member this.WithSkippableOptionFields([<Optional; DefaultParameterValue true>] skippableOptionFields) =
+        if skippableOptionFields then
+            SkippableOptionFields.Always
+        else
+            SkippableOptionFields.FromJsonSerializerOptions
+        |> this.WithSkippableOptionFields
+
+    member _.WithMapFormat(format) =
+        JsonFSharpOptions({ options with MapFormat = format })
+
+    member _.WithTypes(types) =
+        JsonFSharpOptions({ options with Types = types })
+
+    member _.WithAllowOverride([<Optional; DefaultParameterValue true>] allowOverride) =
+        JsonFSharpOptions({ options with AllowOverride = allowOverride })
+
+    member _.WithOverrides(overrides) =
+        JsonFSharpOptions({ options with Overrides = overrides })
+
+    member _.WithOverrides(overrides) =
+        JsonFSharpOptions({ options with Overrides = fun _ -> overrides })
+
+    member private this.WithUnionEncodingFlag(flag, set) =
+        if set then
+            this.WithUnionEncoding(options.UnionEncoding ||| flag)
+        else
+            this.WithUnionEncoding(options.UnionEncoding &&& ~~~flag)
+
+    member internal this.WithBaseUnionEncoding(flag) =
+        this.WithUnionEncoding(options.UnionEncoding &&& removeBaseEncodings ||| flag)
+
+    /// Encode unions as a 2-valued object:
+    /// `unionTagName` (defaults to "Case") contains the union tag,
+    /// and `unionFieldsName` (defaults to "Fields") contains the union fields.
+    /// If the case doesn't have fields, "Fields": [] is omitted.
+    /// This flag is included in Default.
+    member this.WithUnionAdjacentTag() =
+        this.WithBaseUnionEncoding(JsonUnionEncoding.AdjacentTag)
+
+    /// Encode unions as a 1-valued object:
+    /// The field name is the union tag, and the value is the union fields.
+    member this.WithUnionExternalTag() =
+        this.WithBaseUnionEncoding(JsonUnionEncoding.ExternalTag)
+
+    /// Encode unions as a (n+1)-valued object or array (depending on NamedFields):
+    /// the first value (named `unionTagName`, defaulting to "Case", if NamedFields is set)
+    /// is the union tag, the rest are the union fields.
+    member this.WithUnionInternalTag() =
+        this.WithBaseUnionEncoding(JsonUnionEncoding.InternalTag)
+
+    /// Encode unions as a n-valued object:
+    /// the union tag is not encoded, only the union fields are.
+    /// Deserialization is only possible if the fields of all cases have different names.
+    member this.WithUnionUntagged() =
+        this.WithBaseUnionEncoding(JsonUnionEncoding.Untagged)
+
+    /// If unset, union fields are encoded as an array.
+    /// If set, union fields are encoded as an object using their field names.
+    member this.WithUnionNamedFields([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.NamedFields, set)
+
+    /// If set, union cases that don't have fields are encoded as a bare string.
+    member this.WithUnionUnwrapFieldlessTags([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnwrapFieldlessTags, set)
+
+    /// If set, `None` is represented as null,
+    /// and `Some x`  is represented the same as `x`.
+    /// This flag is included in Default.
+    member this.WithUnwrapOption([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnwrapOption, set)
+
+    /// If set, single-case single-field unions are serialized as the single field's value.
+    /// This flag is included in Default.
+    member this.WithUnionUnwrapSingleCaseUnions([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnwrapSingleCaseUnions, set)
+
+    /// If set, the field of a single-field union case is encoded as just the value
+    /// rather than a single-value array or object.
+    member this.WithUnionUnwrapSingleFieldCases([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnwrapSingleFieldCases, set)
+
+    /// Implicitly sets NamedFields. If set, when a union case has a single field which is a record,
+    /// the fields of this record are encoded directly as fields of the object representing the union.
+    member this.WithUnionUnwrapRecordCases([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnwrapRecordCases, set)
+
+    /// In AdjacentTag and InternalTag mode, allow deserializing unions
+    /// where the tag is not the first field in the JSON object.
+    member this.WithUnionAllowUnorderedTag([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.AllowUnorderedTag, set)
+
+    /// When a union field doesn't have an explicit name, use its type as name.
+    member this.WithUnionFieldNamesFromTypes([<Optional; DefaultParameterValue true>] set: bool) =
+        this.WithUnionEncodingFlag(JsonUnionEncoding.UnionFieldNamesFromTypes, set)
 
 type IJsonFSharpConverterAttribute =
     abstract Options: JsonFSharpOptions

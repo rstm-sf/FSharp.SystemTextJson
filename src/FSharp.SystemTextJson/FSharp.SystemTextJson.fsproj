@@ -7,13 +7,14 @@
     <PackageProjectUrl>https://github.com/En3Tho/FSharp.SystemTextJson</PackageProjectUrl>
     <RepositoryUrl>https://github.com/En3Tho/FSharp.SystemTextJson.git</RepositoryUrl>
     <Tags>F#;FSharp;Json</Tags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- SourceLink settings -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <PackageId>CraftTalk.FSharp.SystemTextJson</PackageId>
     <PackageVersion>5.0.100</PackageVersion>
-    <TargetFrameworks>net5.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0; netstandard2.1</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyVersion>5.0.100</AssemblyVersion>
     <FileVersion>5.0.100</FileVersion>
@@ -22,6 +23,7 @@
     <Compile Include="TypeCache.fs" />
     <Compile Include="Skippable.fs" />
     <Compile Include="Options.fs" />
+    <Compile Include="JsonName.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="Collection.fs" />
     <Compile Include="Tuple.fs" />
@@ -30,6 +32,6 @@
     <Compile Include="All.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="5.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
   </ItemGroup>
 </Project>

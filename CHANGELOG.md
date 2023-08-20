@@ -1,5 +1,97 @@
 # Changelog
 
+## 1.2
+
+* [#154](https://github.com/Tarmil/FSharp.SystemTextJson/issues/154): Add `SkippableOptionFields` enum to further customize the skipping of fields of type `option` and `voption` with `WithSkippableOptionFields`.
+    * `SkippableOptionFields.FromJsonSerializerOptions` is the default and equivalent to `WithSkippableOptionFields(false)`: fields of type `option` and `voption` are skipped if used with `JsonIgnoreCondition.WhenWritingNull`.
+    * `SkippableOptionFields.Always` is equivalent to `WithSkippableOptionFields(true)`: fields of type `option` and `voption` are always skipped.
+    * `SkippableOptionFields.Never`: fields of type `option` and `voption` are never skipped.
+
+* [#159](https://github.com/Tarmil/FSharp.SystemTextJson/issues/158): Throw an exception when trying to deserialize `null` into a record or union in any context, rather than only when they are in fields of records and unions.
+
+* [#160](https://github.com/Tarmil/FSharp.SystemTextJson/issues/160): Fix `WithSkippableOptionFields(false)` not working for `voption`.
+
+* [#161](https://github.com/Tarmil/FSharp.SystemTextJson/issues/161): Allow using single-case unions as keys in all dictionary types.
+
+    NOTE: This requires System.Text.Json 8.0.
+
+* [#162](https://github.com/Tarmil/FSharp.SystemTextJson/issues/162): Add option `.WithMapFormat(MapFormat)` to customize the format of F# maps.
+    * `MapFormat.Object` always serializes maps as objects. The key type must be supported as key for dictionaries. NOTE: This requires System.Text.Json 8.0.
+    * `MapFormat.ArrayOfPairs` always serializes maps as JSON arrays whose items are `[key,value]` pairs.
+    * `MapFormat.ObjectOrArrayOfPairs` is the default: maps whose keys are string or single-case unions wrapping string are serialized as JSON objects, and other maps are serialized as JSON arrays whose items are `[key,value]` pairs.
+
+* [#163](https://github.com/Tarmil/FSharp.SystemTextJson/issues/163): Add `StructuralComparison` to the type `Skippable<_>`.
+
+* [#164](https://github.com/Tarmil/FSharp.SystemTextJson/issues/164): When deserializing a record with `JsonIgnoreCondition.WhenWritingNull`, when a non-nullable field is missing, throw a proper `JsonException` rather than a `NullReferenceException`.
+
+## 1.1
+
+* [#141](https://github.com/Tarmil/FSharp.SystemTextJson/issues/141): Add fluent options builder. `JsonFSharpOptions` has the following new methods:
+    * static methods that create options with default settings: `.Default()`, `.NewtonsoftLike()`, `.FSharpLuLike()` and `.ThothLike()`.
+    * instance methods `.WithOptionAbc(?bool)` for each flag `JsonUnionEncoding.Abc`, that sets or unsets this option and returns a new `JsonFSharpOptions`.
+    * instance methods `.WithAbc(value)` for each optional argument `abc` of its constructor, that sets this option and returns a new `JsonFSharpOptions`.
+    * an instance method `.ToJsonSerializerOptions()` that returns a new `JsonSerializerOptions` with the corresponding `JsonFSharpConverter` configured.
+    * an instance method `.AddToJsonSerializerOptions(options)` that takes an existing `JsonSerializerOptions`, configures the corresponding `JsonFSharpConverter` and returns `unit`.
+
+    The above is now the recommended way of configuring the library, and future options may be only made available using fluent methods and not using constructor arguments.
+
+* [#146](https://github.com/Tarmil/FSharp.SystemTextJson/issues/146): Add option `.WithSkippableOptionFields(?bool)` that makes fields of type `option` and `voption` behave like `Skippable`: `None` / `ValueNone` is represented by a missing field instead of a `null` value.
+
+    This is equivalent to the pre-1.0 default behavior, and is now recommended if this behavior is desired instead of `IgnoreNullValues = true` or `DefaultIgnoreCondition = WhenWritingNull`.
+
+## 1.0
+
+* [#89](https://github.com/Tarmil/FSharp.SystemTextJson/issues/89): Add `JsonNameAttribute` as a more powerful substitute for the standard `JsonPropertyNameAttribute`.
+    * When used on a discriminated union case, `JsonNameAttribute` can take a value of type `int` or `bool` instead of `string`.
+    * `JsonNameAttribute` can take multiple values. When deserializing, all these values are treated as equivalent. When serializing, the first one is used.
+    * `JsonNameAttribute` has a settable property `Field: string`. It is used to set the JSON name of a union case field with the given name.
+
+* [#92](https://github.com/Tarmil/FSharp.SystemTextJson/issues/92): Serialization of record properties (in addition to fields).
+    * Add option `includeRecordProperties: bool` to enable serializing record properties.
+    * Also serialize record properties with `JsonIncludeAttribute` even when `includeRecordProperties` is false.
+
+* Add support for the standard `DefaultIgnoreCondition.WhenWritingNull` as a synonym for `IgnoreNullValues = true` that allows `None` and `ValueNone` to be omitted instead of `null`.
+
+* [#106](https://github.com/Tarmil/FSharp.SystemTextJson/issues/106): Fix deserialization of single-case union containing a legitimate `null` value.
+
+* [#123](https://github.com/Tarmil/FSharp.SystemTextJson/issues/123): **BREAKING CHANGE**: Missing fields of type `option` or `voption` now throw an error by default instead of being deserialized to `None` / `ValueNone`. To support missing fields, either enable the option `IgnoreNullValues = true` or `DefaultIgnoreCondition = WhenWritingNull`, or use the type `Skippable` instead of `option` or `voption`.
+
+* [#126](https://github.com/Tarmil/FSharp.SystemTextJson/issues/126): Add option `types: JsonFSharpTypes` that specifies which types the F# converter should handle. Unlisted types will be handled by the default `System.Text.Json`. By default, all supported types are handled.
+
+## 0.19
+
+* [#111](https://github.com/Tarmil/FSharp.SystemTextJson/issues/111): Support `JsonKnownNamingPolicy` in `JsonFSharpConverterAttribute`.
+
+* [#112](https://github.com/Tarmil/FSharp.SystemTextJson/issues/112): Add `Options` and `Overrides` properties to `JsonFSharpConverter`.
+
+* [#263](https://github.com/Tarmil/FSharp.SystemTextJson/issues/263): Add a nullary constructor for JsonFSharpConverter.
+
+
+## 0.18
+
+* [#98](https://github.com/Tarmil/FSharp.SystemTextJson/issues/98): Implement `JsonPropertyOrderAttribute` on records.
+
+* [#108](https://github.com/Tarmil/FSharp.SystemTextJson/issues/108): Allow serializing unnamed union fields using their type name, instead of `Item1` etc, using `JsonUnionEncoding.UnionFieldNamesFromTypes`.
+
+* [#100](https://github.com/Tarmil/FSharp.SystemTextJson/issues/100): Allow unionTagName to be part of the record type definition when deserializing union of records.
+
+* [#109](https://github.com/Tarmil/FSharp.SystemTextJson/issues/109): Add .xml with documentation comments to nupkg. Thanks @exyi!
+
+* [#110](https://github.com/Tarmil/FSharp.SystemTextJson/issues/110): Allow customizing the naming policy for union fields with `unionFieldNamingPolicy`.  
+    If not provided, use `JsonSerializerOptions.PropertyNamingPolicy` as before.
+
+## 0.17
+
+* [#87](https://github.com/Tarmil/FSharp.SystemTextJson/issues/87): Fix null checking on value type fields.
+
+* [#93](https://github.com/Tarmil/FSharp.SystemTextJson/issues/93): Allow deserializing F# unions in `AdjacentTag` and `InternalTag` modes where the tag is not the first field in the JSON object.
+    This capability is enabled by new option `JsonUnionEncoding.AllowUnorderedTag`, which is included in `JsonUnionEncoding.Default` and all `JsonUnionEncoding.*Like` combined formats.
+
+## 0.16
+
+* [#83](https://github.com/Tarmil/FSharp.SystemTextJson/issues/83): Fix null reference exception when deserializing a record that `Skip`s a field with FSharp.Core 5.0.
+* Remove netcoreapp3.0 specific build.
+
 ## 0.15
 
 * [#77](https://github.com/Tarmil/FSharp.SystemTextJson/issues/77): Fix compile-time error when publishing a trimmed .NET 5 application. Thanks @pchalamet!
